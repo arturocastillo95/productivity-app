@@ -1,0 +1,8 @@
+# created by virtualenv automatically
+
+**/.DS_Store
+/Main.code-workspace
+/.vscode
+/bin
+/lib
+/pyvenv.cfg
