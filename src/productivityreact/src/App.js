@@ -1,24 +1,26 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+// import './App.css';
+import 'bulma/css/bulma.css';
+import TodoList from './components/TodoList'
+import Form from './components/Form'
+// import axios from 'axios'
+// import {SortableContainer, SortableElement} from 'react-sortable-hoc';
+
+
 
 function App() {
+  const [todos, setTodos] = useState([])
+
+  const addToDo = name => {
+    const newTodos = [...todos, {id: 1, name: name}]
+    setTodos(newTodos)
+  } 
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reloa.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className='has-text-centered'>
+      <h1 className='title has-text-centered my-5'>Productivity app</h1>
+      <Form addToDo={ addToDo } />
+      <TodoList todos={ todos } />
     </div>
   );
 }
