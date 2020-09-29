@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
     #Third party
     'rest_framework',
+    'corsheaders',
 
     #My apps
     'api',
@@ -54,6 +55,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'productivityapp.urls'
@@ -130,4 +134,8 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'productivityreact/build/static'),
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
 ]

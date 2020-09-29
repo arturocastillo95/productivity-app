@@ -13,8 +13,8 @@ export default function Form({ addToDo }) {
 
     return (
         <form onSubmit={ handleCreate }>
-            <div className="field has-addons">
-                <div className="control">
+            <div className="field has-addons has-addons-centered">
+                <div className="control is-expanded">
                     <input 
                         type="text" 
                         className="input" 
