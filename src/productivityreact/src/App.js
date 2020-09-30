@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import './App.css';
-import Form from './components/Form'
+// import Form from './components/Form'
 import SortableList from './components/SortableList'
 
 
@@ -27,7 +27,7 @@ function App() {
             </a>
           </li>
           <li>
-            <a>
+            <a href="/#">
               <span className="icon is-small"><i className="fas fa-chart-line" aria-hidden="true"></i></span>
               <span>Stats</span>
             </a>

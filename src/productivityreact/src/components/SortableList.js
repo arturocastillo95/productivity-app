@@ -1,6 +1,22 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useContext} from 'react'
 import {SortableContainer, SortableElement} from 'react-sortable-hoc';
 import arrayMove from 'array-move';
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 
 
 function fancyTimeFormat(duration)
@@ -22,7 +38,7 @@ function fancyTimeFormat(duration)
     return ret;
 }
 
-const Timer = ({ seconds }) => {
+const Timer = ({ seconds, onTimeUpdate }) => {
     // initialize timeLeft with the seconds prop
     const [timeLeft, setTimeLeft] = useState(seconds);
   
@@ -33,7 +49,10 @@ const Timer = ({ seconds }) => {
       // save intervalId to clear the interval when the
       // component re-renders
         const intervalId = setInterval(() => {
-        if (timeLeft > 0) {setTimeLeft(timeLeft - 1);}
+        if (timeLeft > 0) {
+            setTimeLeft(timeLeft - 1);
+            onTimeUpdate(timeLeft)
+        }
         }, 1000);
   
       // clear interval on re-render to avoid memory leaks
@@ -53,30 +72,78 @@ const Timer = ({ seconds }) => {
     );
     };
 
-const StartTimer = ({ value }) => {
 
-    const [seconds, setTimer] = useState('0')
 
-    // const startTimer = e => {
-    //     console.log(value.duration)
-    //     setTimer( value.duration )
-    // }
+const StartTimer = ({ value, onTimerStart }) => {
+
+    const [timer, setTimer] = useState({'state': 'paused', 'seconds': '0'});
+    const {active, setActive} = useContext(ActiveTask);
+
+    function startTimer() {
+        setTimer({'state': 'running', 'seconds': value.remaining});
+        setActive(true);
+        onTimerStart();
+    }
+
+    function pauseTimer() {
+        setTimer({'state': 'paused', 'seconds': '0'})
+        setActive(false)
+    }
+
+    function timeUpdate(s) {
+        var url = 'http://127.0.0.1:8000/api/task-update/' + value.id + '/';
+        var csrf_token = getCookie('csrftoken');
+
+        var new_remaining = value
+        new_remaining.remaining = s
+
+        fetch(url, {
+            'method': 'POST',
+            'headers': {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf_token,
+            },
+            'body': JSON.stringify(value)
+            });
+
+        }
+    
     
     return (
         <div className="level-item">
-            <a onClick={() => setTimer(value.duration)}>
+
+            {timer.state === 'paused' && active === false &&
+            <a href="/#" onClick={startTimer}>
                 <span className="icon has-text-success">
                     <i className="fas fa-play"></i>
                 </span>
             </a>
-            <Timer seconds={seconds} />
+            }
+            
+            {timer.state === 'running' &&
+            <a href="/#" onClick={pauseTimer}>
+                <span className="icon has-text-success">
+                    <i className="fas fa-pause"></i>
+                </span>
+            </a>
+            }
+
+            {timer.state === 'running' && 
+            <Timer seconds={timer.seconds} onTimeUpdate={timeUpdate}/>
+            }
+
         </div>
     )
 }
 
 
 
-const SortableItem = SortableElement(({value}) => {
+const SortableItem = SortableElement(({value, onActivateTask}) => {
+
+    function timerStarted() {
+        onActivateTask(value.id)
+    }
+
     return (
         <li className="box">
             <div className="level is-mobile">
@@ -92,7 +159,7 @@ const SortableItem = SortableElement(({value}) => {
 
                 <div className="level-right">
 
-                    <StartTimer value={value}/>
+                    <StartTimer value={value} onTimerStart={timerStarted} />
 
                     <div className="level-item">
                         <a href="">
@@ -108,37 +175,84 @@ const SortableItem = SortableElement(({value}) => {
     )
 });
 
-const SortableComponent = SortableContainer(({items}) => {
+const SortableComponent = SortableContainer(({items, onFocusTask}) => {
+
+    function setActiveTask(taskId) {
+        var index = items.findIndex(i => i.id === taskId);
+        onFocusTask(index)
+    }
+
     return (
     <ul>
         {items.map((value, index) => (
-          <SortableItem key={value.id} index={index} value={value} />
+          <SortableItem key={value.id} index={index} value={value} onActivateTask={setActiveTask}/>
         ))}
       </ul>
     )
 })
 
+
+// Context
+export const ActiveTask = React.createContext(false)
+
 export default function SortableList() {
     const [tasks, setTasks] = useState([]);
+    const [active, setActive] = useState(false);
+    const active_task = {active, setActive};
 
     useEffect(() => {
         fetch('http://127.0.0.1:8000/api/task-list/')
         .then(response => response.json())
-        .then(data => 
-          setTasks(data)
-          )
+        .then(data => {
+            data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0))
+            setTasks(data)
+            }
+        )
         // return () => {
         //     cleanup
         // };
     }, []);
 
     const onSortEnd =  ({oldIndex, newIndex}) => {
-        var newOrder = [...tasks]
-        newOrder = arrayMove(newOrder, oldIndex, newIndex)
+        var newOrder = [...tasks];
+        newOrder = arrayMove(newOrder, oldIndex, newIndex);
+                        
+        newOrder.forEach((task, index) => {
+            var url = 'http://127.0.0.1:8000/api/task-update/' + task.id + '/'
+            var csrf_token = getCookie('csrftoken');
+            task.order = index;
+
+            fetch(url, {
+                'method': 'POST',
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf_token,
+                },
+                'body': JSON.stringify(task)
+            })
+
+
+        })
+
         setTasks(newOrder)
+
+    }
+
+    function focusTask(taskIndex) {
+        var focusTask = tasks[taskIndex];
+        var newOrder = tasks;
+        newOrder.splice(taskIndex, 1);
+        newOrder.unshift(focusTask);
+
+        setTasks(newOrder)
+
     }
 
     return (
-        <SortableComponent items={tasks} onSortEnd={onSortEnd}/>
+        <>
+        <ActiveTask.Provider value={active_task}>
+            <SortableComponent items={tasks} onSortEnd={onSortEnd} onFocusTask={focusTask}/>
+        </ActiveTask.Provider>
+        </>
     )
 }
