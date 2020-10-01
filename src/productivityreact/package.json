@@ -12,6 +12,7 @@
     "array-move": "^3.0.1",
     "axios": "^0.20.0",
     "react": "^16.13.1",
+    "react-bulma-components": "^3.4.0",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.3",
     "react-sortable-hoc": "^1.11.0"

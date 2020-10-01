@@ -74,7 +74,7 @@ const Timer = ({ seconds, onTimeUpdate }) => {
 
 
 
-const StartTimer = ({ value, onTimerStart }) => {
+const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
 
     const [timer, setTimer] = useState({'state': 'paused', 'seconds': '0'});
     const {active, setActive} = useContext(ActiveTask);
@@ -86,8 +86,9 @@ const StartTimer = ({ value, onTimerStart }) => {
     }
 
     function pauseTimer() {
-        setTimer({'state': 'paused', 'seconds': '0'})
-        setActive(false)
+        setTimer({'state': 'paused', 'seconds': '0'});
+        setActive(false);
+        onTimerPause();
     }
 
     function timeUpdate(s) {
@@ -139,13 +140,15 @@ const StartTimer = ({ value, onTimerStart }) => {
 
 
 const SortableItem = SortableElement(({value, onActivateTask}) => {
+    const [active_style, setActiveStyle] = useState(false)
 
     function timerStarted() {
-        onActivateTask(value.id)
+        onActivateTask(value.id);
+        setActiveStyle(true);
     }
 
     return (
-        <li className="box">
+        <li className={"box " + (active_style ? 'task-is-active': '')}>
             <div className="level is-mobile">
                 <div className="level-left">
                     <input type="checkbox"/>
@@ -159,7 +162,7 @@ const SortableItem = SortableElement(({value, onActivateTask}) => {
 
                 <div className="level-right">
 
-                    <StartTimer value={value} onTimerStart={timerStarted} />
+                    <StartTimer value={value} onTimerStart={timerStarted} onTimerPause={() => setActiveStyle(false)}/>
 
                     <div className="level-item">
                         <a href="">
@@ -179,7 +182,7 @@ const SortableComponent = SortableContainer(({items, onFocusTask}) => {
 
     function setActiveTask(taskId) {
         var index = items.findIndex(i => i.id === taskId);
-        onFocusTask(index)
+        onFocusTask(index);
     }
 
     return (
@@ -211,7 +214,7 @@ export default function SortableList() {
         // return () => {
         //     cleanup
         // };
-    }, []);
+    },[]);
 
     const onSortEnd =  ({oldIndex, newIndex}) => {
         var newOrder = [...tasks];
