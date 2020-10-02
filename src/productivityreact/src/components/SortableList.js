@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useContext} from 'react'
+import React, {useState, useEffect, useContext, useRef} from 'react'
 import {SortableContainer, SortableElement} from 'react-sortable-hoc';
 import arrayMove from 'array-move';
 
@@ -111,7 +111,7 @@ const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
     
     
     return (
-        <div className="level-item">
+        <div className={"level-item " + (value.completed ? 'is-hidden' : '')}>
 
             {timer.state === 'paused' && active === false &&
             <a href="/#" onClick={startTimer}>
@@ -139,7 +139,7 @@ const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
 
 
 
-const SortableItem = SortableElement(({value, onActivateTask}) => {
+const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFinishedTask}) => {
     const [active_style, setActiveStyle] = useState(false)
 
     function timerStarted() {
@@ -151,11 +151,11 @@ const SortableItem = SortableElement(({value, onActivateTask}) => {
         <li className={"box " + (active_style ? 'task-is-active': '')}>
             <div className="level is-mobile">
                 <div className="level-left">
-                    <input type="checkbox"/>
+                    <input className={" " + (value.completed ? 'is-hidden' : '')} type="checkbox" onChange={() => onFinishedTask(value)}/>
                 </div>
 
                 <div className="level-item">
-                    <h1 className="title is-5">
+                    <h1 className={"title is-5 " + (value.completed ? 'is-completed': '')}>
                         {value.title}
                     </h1>
                 </div>
@@ -164,13 +164,22 @@ const SortableItem = SortableElement(({value, onActivateTask}) => {
 
                     <StartTimer value={value} onTimerStart={timerStarted} onTimerPause={() => setActiveStyle(false)}/>
 
-                    <div className="level-item">
-                        <a href="">
+                    <div className={"level-item " + (value.completed ? 'is-hidden': '')}>
+                        <a href="#/">
                             <span className="icon has-text-warning">
                                 <i className="fas fa-edit"></i>
                             </span>
                         </a>
                     </div>
+
+                    <div className="level-item">
+                        <a href="#/" onClick={e => onDeleteTask(value)}>
+                            <span className="icon has-text-danger">
+                                <i className="fas fa-lg fa-times"></i>
+                            </span>
+                        </a>
+                    </div>
+
                 </div>
 
             </div>
@@ -178,7 +187,12 @@ const SortableItem = SortableElement(({value, onActivateTask}) => {
     )
 });
 
-const SortableComponent = SortableContainer(({items, onFocusTask}) => {
+const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, onFinishedTask}) => {
+    const [tasks, setTasks] = useState(items)
+
+    useEffect(() => {
+        setTasks(items)
+    }, [items])
 
     function setActiveTask(taskId) {
         var index = items.findIndex(i => i.id === taskId);
@@ -188,9 +202,9 @@ const SortableComponent = SortableContainer(({items, onFocusTask}) => {
     return (
     <ul>
         {items.map((value, index) => (
-          <SortableItem key={value.id} index={index} value={value} onActivateTask={setActiveTask}/>
+            <SortableItem key={value.id} index={index} value={value} onActivateTask={setActiveTask} onDeleteTask={onDeleteTask} onFinishedTask={onFinishedTask}/>
         ))}
-      </ul>
+    </ul>
     )
 })
 
@@ -198,37 +212,22 @@ const SortableComponent = SortableContainer(({items, onFocusTask}) => {
 // Context
 export const ActiveTask = React.createContext(false)
 
-export default function SortableList({ refreshList }) {
+export default function SortableList({ newTaskCreated }) {
     const [tasks, setTasks] = useState([]);
     const [active, setActive] = useState(false);
     const active_task = {active, setActive};
+    const isInitialMount = useRef(true);
 
-    useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/task-list/')
-        .then(response => response.json())
-        .then(data => {
-            data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
-            if (refreshList.title) {
-                var current_index = data.findIndex(i => i.title === refreshList.title && i.remaining === refreshList.remaining);
-                data = arrayMove(data, current_index, 0);
-            }
-            setTasks(data);
-            }
-        )
-        // return () => {
-        //     cleanup
-        // };
-    }, [refreshList]);
+    async function fetchTasks() {
+        var response = await fetch('http://127.0.0.1:8000/api/task-list/');
+        return response.json()
+    };
 
-    const onSortEnd =  ({oldIndex, newIndex}) => {
-        var newOrder = [...tasks];
-        newOrder = arrayMove(newOrder, oldIndex, newIndex);
-                        
-        newOrder.forEach((task, index) => {
+    function updateIndex(data) {
+        data.forEach((task, index) => {
             var url = 'http://127.0.0.1:8000/api/task-update/' + task.id + '/'
             var csrf_token = getCookie('csrftoken');
             task.order = index;
-
             fetch(url, {
                 'method': 'POST',
                 'headers': {
@@ -236,14 +235,101 @@ export default function SortableList({ refreshList }) {
                     'X-CSRFToken': csrf_token,
                 },
                 'body': JSON.stringify(task)
+            });
+        });
+    };
+
+    function updateTask(t) {
+        var url = 'http://127.0.0.1:8000/api/task-update/' + t.id + '/'
+        var csrf_token = getCookie('csrftoken');
+
+        fetch(url, {
+            'method': 'POST',
+            'headers': {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf_token,
+            },
+            'body': JSON.stringify(t)
+        });
+
+    };
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+        } else {
+            fetchTasks().then(data => {
+                data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
+                var index = data.findIndex(i => i.title === newTaskCreated.title);
+                data = arrayMove(data, index, 0);
+                data.forEach((value, i) => {
+                    value.order = i;
+                })
+                setTasks(data);
+                updateIndex(data);
             })
+        }
 
+    }, [newTaskCreated])
 
+    useEffect(() => {
+        fetch('http://127.0.0.1:8000/api/task-list/')
+        .then(response => response.json())
+        .then(data => {
+            data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
+            setTasks(data);
+            }
+        )
+        // return () => {
+        //     cleanup
+        // };
+    }, []);
+
+    const onSortEnd =  ({oldIndex, newIndex}) => {
+        var newOrder = [...tasks];
+        newOrder = arrayMove(newOrder, oldIndex, newIndex);
+                        
+        updateIndex(newOrder);
+        setTasks(newOrder);
+
+    };
+
+    function deleteTask(e) {
+        var newTasks = tasks.filter(i => i.id !== e.id);
+        setTasks(newTasks);
+
+        var csrf_token = getCookie('csrftoken');
+        var url = 'http://127.0.0.1:8000/api/task-delete/' + e.id + '/';
+
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf_token,
+            }
         })
-
-        setTasks(newOrder)
-
     }
+
+    function getCurrentDate() {
+        var date = new Date();
+        var dd = String(date.getDate()).padStart(2,'0');
+        var mm = String(date.getMonth() + 1).padStart(2,'0');
+        var year = date.getFullYear();
+
+        var today = year + '-' + mm + '-' + dd;
+        return today;
+    }
+
+    function markTaskAsComplete(e) {
+        var index = tasks.findIndex(i => i.id === e.id)
+        var updates = [...tasks];
+        updates[index].completed = true;
+        updates[index].finish_date = getCurrentDate();
+
+        setTasks(updates);
+        updateTask(updates[index]);
+    }
+
 
     function focusTask(taskIndex) {
         var focusTask = tasks[taskIndex];
@@ -251,14 +337,14 @@ export default function SortableList({ refreshList }) {
         newOrder.splice(taskIndex, 1);
         newOrder.unshift(focusTask);
 
-        setTasks(newOrder)
+        setTasks(newOrder);
 
-    }
+    };
 
     return (
         <>
         <ActiveTask.Provider value={active_task}>
-            <SortableComponent items={tasks} onSortEnd={onSortEnd} onFocusTask={focusTask}/>
+            <SortableComponent items={tasks} onSortEnd={onSortEnd} onFocusTask={focusTask} onDeleteTask={deleteTask} onFinishedTask={markTaskAsComplete}/>
         </ActiveTask.Provider>
         </>
     )

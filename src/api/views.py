@@ -12,9 +12,9 @@ def apiOverView(request):
     api_urls = {
         'List': '/task-list/',
         'Detail': '/task-detail/',
-        'Create': '/create-task/',
-        'Update': '/update-task/',
-        'Delete': '/delete-task/',
+        'Create': '/task-delete/',
+        'Update': '/task-update/',
+        'Delete': '/task-delete/',
     }
     return Response(api_urls)
 

@@ -7,6 +7,7 @@ class Task(models.Model):
     completed           = models.BooleanField(default=False, blank=True, null=True)
     duration            = models.IntegerField(blank=True, null=True, validators=[MinValueValidator(1800), MaxValueValidator(7200)])
     remaining           = models.PositiveIntegerField(blank=True, null=True, validators=[MaxValueValidator(7200)])
+    finish_date         = models.DateField(blank=True, null=True)
 
     def __str__(self):
         return self.title

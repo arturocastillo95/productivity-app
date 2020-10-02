@@ -23,7 +23,6 @@ export default function Form({ onTaskCreated }) {
     const handleCreate = e => {
         e.preventDefault();
         if (!value.title) return;
-        console.log('submittt')
         
         var csrf_token = getCookie('csrftoken');
 
@@ -35,26 +34,23 @@ export default function Form({ onTaskCreated }) {
             },
             'body': JSON.stringify(value)
         });
-        onTaskCreated();
+        onTaskCreated(value);
     }
 
     function setTaskName(name) {
-        var newName = value;
-        newName.title = name;
-        setValue(newName);
-        console.log(value);
+        value.title = name;
+        setValue(value);
     }
 
     function setTaskDuration(duration) {
         switch(duration) {
-            case 'Short (30 min)':
+            default:
                 value.duration = value.remaining = 1800;
                 setValue(value);
                 break;
             case 'Medium (1 hr)':
                 value.duration = value.remaining = 3600;
                 setValue(value);
-                console.log(value)
                 break;
             case 'Long (2 hrs)':
                 value.duration = value.remaining = 7200;
@@ -79,7 +75,8 @@ export default function Form({ onTaskCreated }) {
                         type="text" 
                         className="input" 
                         // value={value.name}
-                        onChange={e => setTaskName(e.target.value)} 
+                        onChange={e => setTaskName(e.target.value)}
+                        autoFocus
                     />
                 </div>
             </div>

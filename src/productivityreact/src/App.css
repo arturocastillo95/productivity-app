@@ -12,8 +12,16 @@ html, body {
   color: #fff;
 }
 
+.is-hidden {
+  display: none;
+}
 
 .modal-box {
   width: 70%;
   z-index: 999;
+}
+
+.is-completed {
+  text-decoration: line-through;
+  color: #4c5759;
 }
