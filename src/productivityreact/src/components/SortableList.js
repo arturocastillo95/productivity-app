@@ -198,7 +198,7 @@ const SortableComponent = SortableContainer(({items, onFocusTask}) => {
 // Context
 export const ActiveTask = React.createContext(false)
 
-export default function SortableList() {
+export default function SortableList({ refreshList }) {
     const [tasks, setTasks] = useState([]);
     const [active, setActive] = useState(false);
     const active_task = {active, setActive};
@@ -207,14 +207,18 @@ export default function SortableList() {
         fetch('http://127.0.0.1:8000/api/task-list/')
         .then(response => response.json())
         .then(data => {
-            data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0))
-            setTasks(data)
+            data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
+            if (refreshList.title) {
+                var current_index = data.findIndex(i => i.title === refreshList.title && i.remaining === refreshList.remaining);
+                data = arrayMove(data, current_index, 0);
+            }
+            setTasks(data);
             }
         )
         // return () => {
         //     cleanup
         // };
-    },[]);
+    }, [refreshList]);
 
     const onSortEnd =  ({oldIndex, newIndex}) => {
         var newOrder = [...tasks];
