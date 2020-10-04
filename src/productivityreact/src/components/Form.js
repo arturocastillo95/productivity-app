@@ -16,9 +16,74 @@ function getCookie(name) {
     return cookieValue;
 }
 
+Date.prototype.addDays = function(days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+}
 
-export default function Form({ onTaskCreated, onCancelCreate }) {
-    const [value, setValue] = useState({'title': '', 'duration': 1800, 'remaining': 1800})
+export default function Form({ onTaskCreated, onCancelCreate, onSampleTasks }) {
+    const [value, setValue] = useState({'title': '', 'duration': 1800, 'remaining': 1800});
+
+    function dateToStr(date) {
+        var dd = String(date.getDate()).padStart(2,'0');
+        var mm = String(date.getMonth() + 1).padStart(2,'0');
+        var year = date.getFullYear();
+
+        var today = year + '-' + mm + '-' + dd;
+        return today;
+    }
+
+
+    function dataHeaders() {
+        var today = new Date();
+        var arr = [today];
+        var i;
+        for (i = -1; i > -8; i--) {
+            var current = today;
+            arr.unshift(current.addDays(i));
+        };
+        var headers = arr.map(d => dateToStr(d))
+        return headers;
+    }
+
+    // Sample task function
+    function createSampleTasks() {
+        var dates = dataHeaders();
+        var dLen = dates.length;
+        var tasks = [];
+        var csrf_token = getCookie('csrftoken');
+        var i;
+
+        for (i = 0; i < 50; i++) {
+            //Random date in the last week
+            var duration = Math.floor(Math.random() * (7200 - 1800 + 1)) + 1800;
+            var elapsed = Math.floor(Math.random() * duration);
+            var random_boolean = Math.random() >= 0.5;
+
+            var obj = {'title': 'Sample Task ' + i, 'duration': duration, 'remaining': elapsed};
+
+            if (random_boolean) {
+                var rnd = Math.floor(Math.random() * dLen);
+                obj['completed'] = true;
+                obj['finish_date'] = dates[rnd]
+            };
+
+            tasks.push(obj);
+        }
+        
+        tasks.forEach(t => {
+            fetch('http://127.0.0.1:8000/api/task-create/', {
+                'method': 'POST',
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf_token,
+                },
+                'body': JSON.stringify(t)
+            });
+        });
+
+    }
 
     const handleCreate = e => {
         e.preventDefault();
@@ -55,7 +120,6 @@ export default function Form({ onTaskCreated, onCancelCreate }) {
             case 'Long (2 hrs)':
                 value.duration = value.remaining = 7200;
                 setValue(value);
-                console.log(value)
                 break;
         }
     }
@@ -123,6 +187,12 @@ export default function Form({ onTaskCreated, onCancelCreate }) {
                     <i className="fas fa-times"></i>
                 </span>
                 <span className='has-text-weight-bold'>Cancel</span>
+            </button>
+            <button className='button is-info is-fullwidth mt-3' onClick={createSampleTasks}>
+                <span className="icon">
+                    <i className="fas fa-vial"></i>
+                </span>
+                <span className='has-text-weight-bold'>Generate Sample Tasks</span>
             </button>
         </>
     )

@@ -34,12 +34,12 @@ function App() {
               <span>To Do</span>
             </a>
           </li>
-          {/* <li>
+          <li className={"" + (appView === 'completedList' ? 'is-active' : '')} onClick={() => setView('completedList')}>
             <a href="/#">
               <span className="icon is-small"><i className="fas fa-check" aria-hidden="true"></i></span>
               <span>Completed</span>
             </a>
-          </li> */}
+          </li>
           <li className={'' + (appView === 'stats' ? 'is-active': '')} onClick={() => setView('stats')}>
             <a href="/#">
               <span className="icon is-small"><i className="fas fa-chart-line" aria-hidden="true"></i></span>
@@ -49,6 +49,20 @@ function App() {
         </ul>
       </div>
       
+      {appView === 'completedList' &&
+        <section className='container is-fluid has-text-centered'> 
+
+          <SortableList newTaskCreated={newTask} completedTasksList={true}/>
+          
+          <Modal show={createTask} onClose={() => setCreateForm(false)}>
+            <div className="box modal-box">
+              <Form onTaskCreated={newTaskCreated} onCancelCreate={cancelCreate}/>
+            </div>
+          </Modal>
+
+        </section>
+      }
+
       {appView === 'toDo' &&
         <section className='container is-fluid has-text-centered'> 
 
@@ -89,7 +103,7 @@ function App() {
 
           </div>
 
-          <SortableList newTaskCreated={newTask}/>
+          <SortableList newTaskCreated={newTask} completedTasksList={false}/>
           
           <Modal show={createTask} onClose={() => setCreateForm(false)}>
             <div className="box modal-box">

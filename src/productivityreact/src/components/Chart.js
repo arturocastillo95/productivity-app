@@ -1,8 +1,6 @@
 import arrayMove from 'array-move';
 import React, {useState, useEffect} from 'react'
-import {
-    ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, } from 'recharts';
 
 Date.prototype.addDays = function(days) {
     var date = new Date(this.valueOf());
@@ -12,6 +10,7 @@ Date.prototype.addDays = function(days) {
 
 export default function Chart() {
     const [data, setData] = useState([]);
+
 
     function dateToStr(date) {
         var dd = String(date.getDate()).padStart(2,'0');
@@ -89,12 +88,18 @@ export default function Chart() {
                     // height={400}
                     data={data}
                 >
+                    <defs>
+                        <linearGradient id="colorComplete" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#1abc9c" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#1abc9c" stopOpacity={0}/>
+                        </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="Completed Tasks" stroke="#1abc9c" activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="Completed Tasks" stroke="#1abc9c" activeDot={{ r: 8 }} fill='url(#colorComplete)' />
                 </LineChart>
             </ResponsiveContainer>
       </div>

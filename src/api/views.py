@@ -25,6 +25,18 @@ def tasksList(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
+def tasksListActive(request):
+    tasks = Task.objects.filter(completed=False)
+    serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def tasksListCompleted(request):
+    tasks = Task.objects.filter(completed=True)
+    serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
 def tasksDetail(request, id):
     tasks = Task.objects.get(id=id)
     serializer = TaskSerializer(tasks, many=False)

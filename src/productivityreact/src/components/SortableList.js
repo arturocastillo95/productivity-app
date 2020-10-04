@@ -81,8 +81,8 @@ const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
 
     function startTimer() {
         setTimer({'state': 'running', 'seconds': value.remaining});
-        setActive(true);
         onTimerStart();
+        setActive(true);
     }
 
     function pauseTimer() {
@@ -188,11 +188,6 @@ const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFi
 });
 
 const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, onFinishedTask}) => {
-    const [tasks, setTasks] = useState(items);
-
-    useEffect(() => {
-        setTasks(items)
-    }, [items])
 
     function setActiveTask(taskId) {
         var index = items.findIndex(i => i.id === taskId);
@@ -209,55 +204,59 @@ const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, 
 })
 
 
-// Context
+// Context for setting active tasks
 export const ActiveTask = React.createContext(false)
 
-export default function SortableList({ newTaskCreated }) {
+export default function SortableList({ newTaskCreated, completedTasksList}) {
     const [tasks, setTasks] = useState([]);
     const [active, setActive] = useState(false);
     const active_task = {active, setActive};
     const isInitialMount = useRef(true);
+    const [isLoading, setLoading] = useState(true);
 
-    async function fetchTasks() {
-        var response = await fetch('http://127.0.0.1:8000/api/task-list/');
-        return response.json()
-    };
+    var fetchTasks = async () => {
+        const url = 'http://127.0.0.1:8000/api/task-list/' + (completedTasksList ? 'completed/' : 'active/')
+        try {
+            const response = await fetch(url);
+            return response.ok ? response.json() : null;
+        } catch (error) {
+            console.log(error);
+            return null;
+        }
+    }
 
-    function updateIndex(data) {
-        data.forEach((task, index) => {
-            var url = 'http://127.0.0.1:8000/api/task-update/' + task.id + '/'
-            var csrf_token = getCookie('csrftoken');
-            task.order = index;
-            fetch(url, {
+    const taskUpdate = async (obj, csrf_token) => {
+        const url = 'http://127.0.0.1:8000/api/task-update/' + obj.id + '/'
+
+        try {
+            const update = await fetch(url, {
                 'method': 'POST',
                 'headers': {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrf_token,
                 },
-                'body': JSON.stringify(task)
-            });
-        });
-    };
+                'body': JSON.stringify(obj)
+            })
+        } catch (error) {
+            console.log(error)
+        }
+    }
 
-    function updateTask(t) {
-        var url = 'http://127.0.0.1:8000/api/task-update/' + t.id + '/'
+    function updateIndex(data) {
         var csrf_token = getCookie('csrftoken');
-
-        fetch(url, {
-            'method': 'POST',
-            'headers': {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf_token,
-            },
-            'body': JSON.stringify(t)
+        
+        data.forEach((task, index) => {
+            task.order = index;
+            taskUpdate(task, csrf_token);
         });
-
     };
 
+    //Update list when new task is created
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
         } else {
+            console.log('new task created')
             fetchTasks().then(data => {
                 data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
                 var index = data.findIndex(i => i.title === newTaskCreated.title);
@@ -273,11 +272,12 @@ export default function SortableList({ newTaskCreated }) {
     }, [newTaskCreated])
 
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/task-list/')
-        .then(response => response.json())
+        
+        fetchTasks()
         .then(data => {
             data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
             setTasks(data);
+            setLoading(false)
             }
         )
         // return () => {
@@ -325,27 +325,30 @@ export default function SortableList({ newTaskCreated }) {
         var updates = [...tasks];
         updates[index].completed = true;
         updates[index].finish_date = getCurrentDate();
+        var csrf_token = getCookie('csrftoken')
 
         setTasks(updates);
-        updateTask(updates[index]);
+        taskUpdate(updates[index], csrf_token);
     }
 
 
     function focusTask(taskIndex) {
-        var focusTask = tasks[taskIndex];
-        var newOrder = tasks;
-        newOrder.splice(taskIndex, 1);
-        newOrder.unshift(focusTask);
-
-        setTasks(newOrder);
-
+        var newOrder = arrayMove(tasks, taskIndex, 0);
+        setTasks(newOrder)
     };
 
     return (
         <>
+        
+        {isLoading === true && 
+        <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+        }
+
+        {isLoading === false && 
         <ActiveTask.Provider value={active_task}>
             <SortableComponent items={tasks} onSortEnd={onSortEnd} onFocusTask={focusTask} onDeleteTask={deleteTask} onFinishedTask={markTaskAsComplete}/>
         </ActiveTask.Provider>
+        }
         </>
     )
 }
