@@ -3,6 +3,7 @@ import './App.css';
 import SortableList from './components/SortableList';
 import {Modal} from 'react-bulma-components';
 import Form from './components/Form'
+import Chart from './components/Chart'
 
 function App() {
 
@@ -12,6 +13,10 @@ function App() {
 
   function newTaskCreated(t) {
     setNewTask(t);
+    setCreateForm(false);
+  }
+
+  function cancelCreate() {
     setCreateForm(false);
   }
 
@@ -88,7 +93,7 @@ function App() {
           
           <Modal show={createTask} onClose={() => setCreateForm(false)}>
             <div className="box modal-box">
-              <Form onTaskCreated={newTaskCreated}/>
+              <Form onTaskCreated={newTaskCreated} onCancelCreate={cancelCreate}/>
             </div>
           </Modal>
 
@@ -96,9 +101,7 @@ function App() {
       }
 
       {appView === 'stats' && 
-        <section className="container is-fluid has-text-centered">
-          <h1>Hello</h1>
-        </section>
+        <Chart />
       }
 
     </div>

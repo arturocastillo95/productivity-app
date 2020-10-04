@@ -188,7 +188,7 @@ const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFi
 });
 
 const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, onFinishedTask}) => {
-    const [tasks, setTasks] = useState(items)
+    const [tasks, setTasks] = useState(items);
 
     useEffect(() => {
         setTasks(items)

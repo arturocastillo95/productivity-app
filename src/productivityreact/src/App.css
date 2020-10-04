@@ -25,3 +25,7 @@ html, body {
   text-decoration: line-through;
   color: #4c5759;
 }
+
+.recharts-responsive-container {
+  margin: auto;
+}

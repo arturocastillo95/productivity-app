@@ -17,7 +17,7 @@ function getCookie(name) {
 }
 
 
-export default function Form({ onTaskCreated }) {
+export default function Form({ onTaskCreated, onCancelCreate }) {
     const [value, setValue] = useState({'title': '', 'duration': 1800, 'remaining': 1800})
 
     const handleCreate = e => {
@@ -61,6 +61,7 @@ export default function Form({ onTaskCreated }) {
     }
 
     return (
+        <>
         <form onSubmit={ handleCreate }>
 
             <h1 className="title is-3 has-text-centered">
@@ -96,14 +97,14 @@ export default function Form({ onTaskCreated }) {
                         <option>
                             Long (2 hrs)
                         </option>
-                        <option>
+                        {/* <option>
                             Custom (Max. 2hrs)
-                        </option>
+                        </option> */}
         
                         </select>
                     </div>
                     <div className="icon is-small is-left">
-                        <i className="fas fa-filter"></i>
+                        <i className="fas fa-stopwatch"></i>
                     </div>
                 </div>
             </div>
@@ -115,13 +116,14 @@ export default function Form({ onTaskCreated }) {
                 <span className='has-text-weight-bold'>Create Task</span>
             </button>
 
-            <button className='button is-danger is-fullwidth mt-3' onClick={() => onTaskCreated()}>
+        </form>
+
+            <button className='button is-danger is-fullwidth mt-3' onClick={onCancelCreate}>
                 <span className="icon">
                     <i className="fas fa-times"></i>
                 </span>
                 <span className='has-text-weight-bold'>Cancel</span>
             </button>
-
-        </form>
+        </>
     )
 }
