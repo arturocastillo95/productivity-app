@@ -1,25 +1,9 @@
-import arrayMove from 'array-move';
 import React, {useState, useEffect} from 'react'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, } from 'recharts';
-
-Date.prototype.addDays = function(days) {
-    var date = new Date(this.valueOf());
-    date.setDate(date.getDate() + days);
-    return date;
-}
+import {dateToStr} from './utils'
 
 export default function Chart() {
     const [data, setData] = useState([]);
-
-
-    function dateToStr(date) {
-        var dd = String(date.getDate()).padStart(2,'0');
-        var mm = String(date.getMonth() + 1).padStart(2,'0');
-        var year = date.getFullYear();
-
-        var today = year + '-' + mm + '-' + dd;
-        return today;
-    }
 
     function dataHeaders() {
         var today = new Date();

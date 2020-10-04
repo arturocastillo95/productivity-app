@@ -30,6 +30,16 @@ html, body {
   margin: auto;
 }
 
+.title-container {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.title-content {
+  flex-shrink: 0;
+}
+
 /* Loader */
 
 .lds-ellipsis {

@@ -1,143 +1,8 @@
-import React, {useState, useEffect, useContext, useRef} from 'react'
+import React, {useState, useEffect, useRef} from 'react'
 import {SortableContainer, SortableElement} from 'react-sortable-hoc';
 import arrayMove from 'array-move';
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-
-function fancyTimeFormat(duration)
-{   
-    // Hours, minutes and seconds
-    var hrs = ~~(duration / 3600);
-    var mins = ~~((duration % 3600) / 60);
-    var secs = ~~duration % 60;
-
-    // Output like "1:01" or "4:03:59" or "123:03:59"
-    var ret = "";
-
-    if (hrs > 0) {
-        ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
-    }
-
-    ret += "" + mins + ":" + (secs < 10 ? "0" : "");
-    ret += "" + secs;
-    return ret;
-}
-
-const Timer = ({ seconds, onTimeUpdate }) => {
-    // initialize timeLeft with the seconds prop
-    const [timeLeft, setTimeLeft] = useState(seconds);
-  
-    useEffect(() => {
-      // exit early when we reach 0
-        if (!timeLeft) return;
-
-      // save intervalId to clear the interval when the
-      // component re-renders
-        const intervalId = setInterval(() => {
-        if (timeLeft > 0) {
-            setTimeLeft(timeLeft - 1);
-            onTimeUpdate(timeLeft)
-        }
-        }, 1000);
-  
-      // clear interval on re-render to avoid memory leaks
-        return () => clearInterval(intervalId);
-      // add timeLeft as a dependency to re-rerun the effect
-      // when we update it
-    }, [timeLeft]);
-
-    useEffect(() => {
-        setTimeLeft(seconds)
-    }, [seconds])
-
-    return (
-    <div>
-        <h1 className='has-text-success'>{fancyTimeFormat(timeLeft)}</h1>
-    </div>
-    );
-    };
-
-
-
-const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
-
-    const [timer, setTimer] = useState({'state': 'paused', 'seconds': '0'});
-    const {active, setActive} = useContext(ActiveTask);
-
-    function startTimer() {
-        setTimer({'state': 'running', 'seconds': value.remaining});
-        onTimerStart();
-        setActive(true);
-    }
-
-    function pauseTimer() {
-        setTimer({'state': 'paused', 'seconds': '0'});
-        setActive(false);
-        onTimerPause();
-    }
-
-    function timeUpdate(s) {
-        var url = 'http://127.0.0.1:8000/api/task-update/' + value.id + '/';
-        var csrf_token = getCookie('csrftoken');
-
-        var new_remaining = value
-        new_remaining.remaining = s
-
-        fetch(url, {
-            'method': 'POST',
-            'headers': {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf_token,
-            },
-            'body': JSON.stringify(value)
-            });
-
-        }
-    
-    
-    return (
-        <div className={"level-item " + (value.completed ? 'is-hidden' : '')}>
-
-            {timer.state === 'paused' && active === false &&
-            <a href="/#" onClick={startTimer}>
-                <span className="icon has-text-success">
-                    <i className="fas fa-play"></i>
-                </span>
-            </a>
-            }
-            
-            {timer.state === 'running' &&
-            <a href="/#" onClick={pauseTimer}>
-                <span className="icon has-text-success">
-                    <i className="fas fa-pause"></i>
-                </span>
-            </a>
-            }
-
-            {timer.state === 'running' && 
-            <Timer seconds={timer.seconds} onTimeUpdate={timeUpdate}/>
-            }
-
-        </div>
-    )
-}
-
-
+import {getCookie, taskUpdate} from './utils'
+import {StartTimer} from './Timer'
 
 const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFinishedTask}) => {
     const [active_style, setActiveStyle] = useState(false)
@@ -222,23 +87,6 @@ export default function SortableList({ newTaskCreated, completedTasksList}) {
         } catch (error) {
             console.log(error);
             return null;
-        }
-    }
-
-    const taskUpdate = async (obj, csrf_token) => {
-        const url = 'http://127.0.0.1:8000/api/task-update/' + obj.id + '/'
-
-        try {
-            const update = await fetch(url, {
-                'method': 'POST',
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrf_token,
-                },
-                'body': JSON.stringify(obj)
-            })
-        } catch (error) {
-            console.log(error)
         }
     }
 
@@ -330,7 +178,6 @@ export default function SortableList({ newTaskCreated, completedTasksList}) {
         setTasks(updates);
         taskUpdate(updates[index], csrf_token);
     }
-
 
     function focusTask(taskIndex) {
         var newOrder = arrayMove(tasks, taskIndex, 0);

@@ -1,51 +1,8 @@
 import React, {useState} from 'react'
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-Date.prototype.addDays = function(days) {
-    var date = new Date(this.valueOf());
-    date.setDate(date.getDate() + days);
-    return date;
-}
+import {getCookie, dataHeaders} from './utils'
 
 export default function Form({ onTaskCreated, onCancelCreate, onSampleTasks }) {
     const [value, setValue] = useState({'title': '', 'duration': 1800, 'remaining': 1800});
-
-    function dateToStr(date) {
-        var dd = String(date.getDate()).padStart(2,'0');
-        var mm = String(date.getMonth() + 1).padStart(2,'0');
-        var year = date.getFullYear();
-
-        var today = year + '-' + mm + '-' + dd;
-        return today;
-    }
-
-
-    function dataHeaders() {
-        var today = new Date();
-        var arr = [today];
-        var i;
-        for (i = -1; i > -8; i--) {
-            var current = today;
-            arr.unshift(current.addDays(i));
-        };
-        var headers = arr.map(d => dateToStr(d))
-        return headers;
-    }
 
     // Sample task function
     function createSampleTasks() {

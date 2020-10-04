@@ -24,7 +24,9 @@ function App() {
     
     <div className="main py-3">
       
-      <h1 className='title has-text-centered py-3'>Productivity app</h1>
+      <h1 className='title has-text-centered py-3'>
+        Productivity <span className='has-text-weight-light'>App</span>
+      </h1>
 
       <div className="tabs is-centered is-boxed">
         <ul>
@@ -48,13 +50,15 @@ function App() {
           </li>
         </ul>
       </div>
-      
+
+
+      {/* Show coompleted list */}
       {appView === 'completedList' &&
         <section className='container is-fluid has-text-centered'> 
 
           <SortableList newTaskCreated={newTask} completedTasksList={true}/>
           
-          <Modal show={createTask} onClose={() => setCreateForm(false)}>
+          <Modal className='modal-fx-fadeInScale' show={createTask} onClose={() => setCreateForm(false)}>
             <div className="box modal-box">
               <Form onTaskCreated={newTaskCreated} onCancelCreate={cancelCreate}/>
             </div>
