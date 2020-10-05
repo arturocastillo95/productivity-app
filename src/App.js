@@ -5,7 +5,7 @@ import {Modal} from 'react-bulma-components';
 import Form from './components/Form'
 import Chart from './components/Chart'
 
-export const BASE_URL = 'http://127.0.0.1:8000/'
+export const BASE_URL = 'https://productivity-app-react.herokuapp.com/'
 
 function App() {
 
