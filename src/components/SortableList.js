@@ -78,7 +78,7 @@ const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, 
     return (
     <ul>
         {items.map((value, index) => (
-            <SortableItem key={value.id} index={index} value={value} onActivateTask={setActiveTask} onDeleteTask={onDeleteTask} onFinishedTask={onFinishedTask} onEditTask={onEditTask}/>
+            <SortableItem key={value.id} index={index} distance={1} value={value} onActivateTask={setActiveTask} onDeleteTask={onDeleteTask} onFinishedTask={onFinishedTask} onEditTask={onEditTask}/>
         ))}
     </ul>
     )
