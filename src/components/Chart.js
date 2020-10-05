@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from 'react'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, } from 'recharts';
 import {dateToStr} from './utils'
+import {BASE_URL} from './../App'
 
 export default function Chart() {
     const [data, setData] = useState([]);
@@ -46,7 +47,7 @@ export default function Chart() {
         }
 
         const fetchData = async () => {
-            const url = 'http://127.0.0.1:8000/api/task-list/'
+            const url = BASE_URL + 'api/task-list/'
 
             try {
                 const response = await fetch(url);
