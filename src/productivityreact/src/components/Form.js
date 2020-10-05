@@ -1,46 +1,9 @@
 import React, {useState} from 'react'
-import {getCookie, dataHeaders} from './utils'
+import {getCookie, createSampleTasks, taskUpdate, createTask} from './utils'
+import {DurationSelector} from './DurationSelector'
 
-export default function Form({ onTaskCreated, onCancelCreate, onSampleTasks }) {
-    const [value, setValue] = useState({'title': '', 'duration': 1800, 'remaining': 1800});
-
-    // Sample task function
-    function createSampleTasks() {
-        var dates = dataHeaders();
-        var dLen = dates.length;
-        var tasks = [];
-        var csrf_token = getCookie('csrftoken');
-        var i;
-
-        for (i = 0; i < 50; i++) {
-            //Random date in the last week
-            var duration = Math.floor(Math.random() * (7200 - 1800 + 1)) + 1800;
-            var elapsed = Math.floor(Math.random() * duration);
-            var random_boolean = Math.random() >= 0.5;
-
-            var obj = {'title': 'Sample Task ' + i, 'duration': duration, 'remaining': elapsed};
-
-            if (random_boolean) {
-                var rnd = Math.floor(Math.random() * dLen);
-                obj['completed'] = true;
-                obj['finish_date'] = dates[rnd]
-            };
-
-            tasks.push(obj);
-        }
-        
-        tasks.forEach(t => {
-            fetch('http://127.0.0.1:8000/api/task-create/', {
-                'method': 'POST',
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrf_token,
-                },
-                'body': JSON.stringify(t)
-            });
-        });
-
-    }
+export default function Form({ editValue, onTaskCreated, onCancelCreate, onUpdateTasks }) {
+    const [value, setValue] = useState((Object.keys(editValue).length === 0 ? {'title': '', 'duration': 1800, 'remaining': 1800} : editValue));
 
     const handleCreate = e => {
         e.preventDefault();
@@ -48,15 +11,18 @@ export default function Form({ onTaskCreated, onCancelCreate, onSampleTasks }) {
         
         var csrf_token = getCookie('csrftoken');
 
-        fetch('http://127.0.0.1:8000/api/task-create/', {
-            'method': 'POST',
-            'headers': {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf_token,
-            },
-            'body': JSON.stringify(value)
-        });
-        onTaskCreated(value);
+        if (!value.id) {
+            createTask(value, csrf_token);
+            onTaskCreated(value);
+            return;
+        }
+
+        taskUpdate(value, csrf_token);
+        onUpdateTasks();
+    };
+
+    const handleCreateSamples = () => {
+        createSampleTasks().then(e => onUpdateTasks());
     }
 
     function setTaskName(name) {
@@ -96,45 +62,27 @@ export default function Form({ onTaskCreated, onCancelCreate, onSampleTasks }) {
                         placeholder='Get stuff done!'
                         type="text" 
                         className="input" 
-                        // value={value.name}
                         onChange={e => setTaskName(e.target.value)}
+                        defaultValue={value.title}
                         autoFocus
                     />
                 </div>
             </div>
 
-            <div className="field pb-3">
-                <label className="label">Task duration</label>
-                <div className="control has-icons-left">
-                    <div className="select">
-                        <select onChange={e => setTaskDuration(e.target.value)} defaultValue={'Short (30 min)'}> 
-        
-                        <option>
-                            Short (30 min)
-                        </option>
-                        <option>
-                            Medium (1 hr)
-                        </option>
-                        <option>
-                            Long (2 hrs)
-                        </option>
-                        {/* <option>
-                            Custom (Max. 2hrs)
-                        </option> */}
-        
-                        </select>
-                    </div>
-                    <div className="icon is-small is-left">
-                        <i className="fas fa-stopwatch"></i>
-                    </div>
-                </div>
-            </div>
+            <DurationSelector setTaskDuration={setTaskDuration}/>
 
             <button type='submit' className='button is-success is-fullwidth'>
                 <span className="icon">
                     <i className="fas fa-check"></i>
                 </span>
-                <span className='has-text-weight-bold'>Create Task</span>
+                <span className='has-text-weight-bold'>
+                    {value.id != null &&
+                    <span>Save changes</span>
+                    }
+                    {value.title === '' &&
+                    <span>Create Task</span>
+                    }
+                </span>
             </button>
 
         </form>
@@ -145,12 +93,16 @@ export default function Form({ onTaskCreated, onCancelCreate, onSampleTasks }) {
                 </span>
                 <span className='has-text-weight-bold'>Cancel</span>
             </button>
-            <button className='button is-info is-fullwidth mt-3' onClick={createSampleTasks}>
+
+            {value.title === '' &&             
+            <button className='button is-info is-fullwidth mt-3' onClick={handleCreateSamples}>
                 <span className="icon">
                     <i className="fas fa-vial"></i>
                 </span>
                 <span className='has-text-weight-bold'>Generate Sample Tasks</span>
             </button>
+            }
+
         </>
     )
 }

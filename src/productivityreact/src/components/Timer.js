@@ -2,7 +2,7 @@ import React, {useState, useEffect, useContext} from 'react'
 import {fancyTimeFormat, getCookie, taskUpdate} from './utils'
 import {ActiveTask} from './SortableList'
 
-const Timer = ({ seconds, onTimeUpdate }) => {
+const Timer = ({ seconds, onTimeUpdate, markAsComplete }) => {
     // initialize timeLeft with the seconds prop
     const [timeLeft, setTimeLeft] = useState(seconds);
   
@@ -12,13 +12,20 @@ const Timer = ({ seconds, onTimeUpdate }) => {
 
       // save intervalId to clear the interval when the
       // component re-renders
+
         const intervalId = setInterval(() => {
         if (timeLeft > 0) {
             setTimeLeft(timeLeft - 1);
             onTimeUpdate(timeLeft)
         }
         }, 1000);
-  
+        
+
+        if (timeLeft === 1) {
+            setTimeLeft(0);
+            onTimeUpdate(0);
+            markAsComplete();
+        }
       // clear interval on re-render to avoid memory leaks
         return () => clearInterval(intervalId);
       // add timeLeft as a dependency to re-rerun the effect
@@ -36,7 +43,7 @@ const Timer = ({ seconds, onTimeUpdate }) => {
     );
     };
 
-export const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
+export const StartTimer = ({ value, onTimerStart, onTimerPause, markAsComplete }) => {
 
     const [timer, setTimer] = useState({'state': 'paused', 'seconds': '0'});
     const {active, setActive} = useContext(ActiveTask);
@@ -46,23 +53,31 @@ export const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
         onTimerStart();
         setActive(true);
     }
-
+    
     function pauseTimer() {
         setTimer({'state': 'paused', 'seconds': '0'});
         setActive(false);
         onTimerPause();
     }
-
+    
     function timeUpdate(s) {
         var csrf_token = getCookie('csrftoken');
-
+        
         var new_remaining = value;
         new_remaining.remaining = s;
 
         taskUpdate(new_remaining, csrf_token)
-        }
+    }
     
-    
+    function resetTimer() {
+        setTimer({'state': 'running', 'seconds': value.duration});
+    }
+
+    function markTaskComplete() {
+        setActive(false);
+        markAsComplete();
+    }
+
     return (
         <div className={"level-item " + (value.completed ? 'is-hidden' : '')}>
 
@@ -83,7 +98,16 @@ export const StartTimer = ({ value, onTimerStart, onTimerPause }) => {
             }
 
             {timer.state === 'running' && 
-            <Timer seconds={timer.seconds} onTimeUpdate={timeUpdate}/>
+            <Timer seconds={timer.seconds} onTimeUpdate={timeUpdate} markAsComplete={markTaskComplete}/>
+            }
+
+            {timer.state === 'running' &&
+                <a href="/#">
+                    <span className="icon has-text-warning" onClick={resetTimer}>
+                        &nbsp;&nbsp;
+                        <i className="fas fa-redo-alt"></i>
+                    </span>
+                </a>
             }
 
         </div>

@@ -5,19 +5,46 @@ import {Modal} from 'react-bulma-components';
 import Form from './components/Form'
 import Chart from './components/Chart'
 
+export const BASE_URL = 'http://127.0.0.1:8000/'
+
 function App() {
 
-  const [createTask, setCreateForm] = useState(false);
+  const [createTask, setCreateForm] = useState({'task': {}, 'show': false});
   const [newTask, setNewTask] = useState({});
   const [appView, setView] = useState('toDo');
+  const [refresh, setRefresh] = useState(false);
+  const [sort, setSort] = useState('no-sort')
+
+  function setSorting(s) {
+    console.log(s)
+    switch (s) {
+      default:
+        break;
+      case 'Longest tasks':
+        setSort('longest');
+        break;
+      case 'Shortest tasks':
+        setSort('shortest');
+        break;
+    }
+  };
+
+  function refreshTaskList() {
+    setCreateForm({'task': {}, 'show': false});
+    setRefresh(true);
+  }
 
   function newTaskCreated(t) {
     setNewTask(t);
-    setCreateForm(false);
+    setCreateForm({'task': {}, 'show': false});
   }
 
   function cancelCreate() {
-    setCreateForm(false);
+    setCreateForm({'task': false, 'show':false});
+  }
+
+  function onEditTask(value) {
+    setCreateForm({'task': value, 'show': true});
   }
 
   return (
@@ -57,12 +84,6 @@ function App() {
         <section className='container is-fluid has-text-centered'> 
 
           <SortableList newTaskCreated={newTask} completedTasksList={true}/>
-          
-          <Modal className='modal-fx-fadeInScale' show={createTask} onClose={() => setCreateForm(false)}>
-            <div className="box modal-box">
-              <Form onTaskCreated={newTaskCreated} onCancelCreate={cancelCreate}/>
-            </div>
-          </Modal>
 
         </section>
       }
@@ -73,7 +94,7 @@ function App() {
           <div className="columns is-variable is-1 is-mobile">
 
             <div className="column is-9">
-              <a href='/#' className='button mb-5 is-fullwidth is-rounded' onClick={() => setCreateForm(true)}>
+              <a href='/#' className='button mb-5 is-fullwidth is-rounded' onClick={e => setCreateForm({'task': {}, 'show': true})}>
                 <span className="icon">
                   <i className="fas fa-plus"></i>
                 </span>
@@ -85,7 +106,7 @@ function App() {
 
               <div className="control has-icons-left">
                 <div className="select is-fullwidth is-rounded">
-                  <select defaultValue='No sort'>
+                  <select defaultValue='No sort' onChange={e => setSorting(e.target.value)}>
     
                     <option>
                       No sort
@@ -107,11 +128,11 @@ function App() {
 
           </div>
 
-          <SortableList newTaskCreated={newTask} completedTasksList={false}/>
+          <SortableList newTaskCreated={newTask} completedTasksList={false} onEditTask={onEditTask} onUpdateTasks={refresh} onSort={sort}/>
           
-          <Modal show={createTask} onClose={() => setCreateForm(false)}>
+          <Modal show={createTask.show} onClose={() => setCreateForm({'task': {}, 'show': false})}>
             <div className="box modal-box">
-              <Form onTaskCreated={newTaskCreated} onCancelCreate={cancelCreate}/>
+              <Form editValue={createTask.task} onTaskCreated={newTaskCreated} onCancelCreate={cancelCreate} onUpdateTasks={refreshTaskList}/>
             </div>
           </Modal>
 

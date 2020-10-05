@@ -40,6 +40,9 @@ html, body {
   flex-shrink: 0;
 }
 
+.level-item .is-help {
+  color: #5a6668;
+}
 /* Loader */
 
 .lds-ellipsis {

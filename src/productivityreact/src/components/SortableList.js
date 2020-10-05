@@ -1,15 +1,22 @@
 import React, {useState, useEffect, useRef} from 'react'
 import {SortableContainer, SortableElement} from 'react-sortable-hoc';
 import arrayMove from 'array-move';
-import {getCookie, taskUpdate} from './utils'
+import {getCookie, taskUpdate,fancyTimeFormat} from './utils'
 import {StartTimer} from './Timer'
+import {BASE_URL} from './../App'
 
-const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFinishedTask}) => {
+
+const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFinishedTask, onEditTask}) => {
     const [active_style, setActiveStyle] = useState(false)
 
     function timerStarted() {
         onActivateTask(value.id);
         setActiveStyle(true);
+    }
+
+    function markAsComplete() {
+        setActiveStyle(false);
+        onFinishedTask(value);
     }
 
     return (
@@ -20,22 +27,31 @@ const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFi
                 </div>
 
                 <div className="level-item">
-                    <h1 className={"title is-5 " + (value.completed ? 'is-completed': '')}>
-                        {value.title}
-                    </h1>
+                    <div>
+                        <h1 className={"title is-5 " + (value.completed ? 'is-completed': '')}>
+                            {value.title}
+                        </h1>
+                        {active_style === false &&                         
+                            <p className="is-help has-text-centered">
+                                {fancyTimeFormat(value.remaining)}
+                            </p>
+                        }
+                    </div>
                 </div>
 
                 <div className="level-right">
 
-                    <StartTimer value={value} onTimerStart={timerStarted} onTimerPause={() => setActiveStyle(false)}/>
+                    <StartTimer value={value} onTimerStart={timerStarted} onTimerPause={() => setActiveStyle(false)} markAsComplete={markAsComplete}/>
 
-                    <div className={"level-item " + (value.completed ? 'is-hidden': '')}>
+                    {active_style === false &&                     
+                    <div className={"level-item " + (value.completed ? 'is-hidden': '')} onClick={e => onEditTask(value)}>
                         <a href="#/">
                             <span className="icon has-text-warning">
                                 <i className="fas fa-edit"></i>
                             </span>
                         </a>
                     </div>
+                    }
 
                     <div className="level-item">
                         <a href="#/" onClick={e => onDeleteTask(value)}>
@@ -52,7 +68,7 @@ const SortableItem = SortableElement(({value, onActivateTask, onDeleteTask, onFi
     )
 });
 
-const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, onFinishedTask}) => {
+const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, onFinishedTask, onEditTask }) => {
 
     function setActiveTask(taskId) {
         var index = items.findIndex(i => i.id === taskId);
@@ -62,7 +78,7 @@ const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, 
     return (
     <ul>
         {items.map((value, index) => (
-            <SortableItem key={value.id} index={index} value={value} onActivateTask={setActiveTask} onDeleteTask={onDeleteTask} onFinishedTask={onFinishedTask}/>
+            <SortableItem key={value.id} index={index} value={value} onActivateTask={setActiveTask} onDeleteTask={onDeleteTask} onFinishedTask={onFinishedTask} onEditTask={onEditTask}/>
         ))}
     </ul>
     )
@@ -72,15 +88,15 @@ const SortableComponent = SortableContainer(({items, onFocusTask, onDeleteTask, 
 // Context for setting active tasks
 export const ActiveTask = React.createContext(false)
 
-export default function SortableList({ newTaskCreated, completedTasksList}) {
+export default function SortableList({ newTaskCreated, completedTasksList, onEditTask, onUpdateTasks, onSort }) {
     const [tasks, setTasks] = useState([]);
     const [active, setActive] = useState(false);
     const active_task = {active, setActive};
     const isInitialMount = useRef(true);
     const [isLoading, setLoading] = useState(true);
 
-    var fetchTasks = async () => {
-        const url = 'http://127.0.0.1:8000/api/task-list/' + (completedTasksList ? 'completed/' : 'active/')
+    const fetchTasks = async () => {
+        const url = BASE_URL + 'api/task-list/' + (completedTasksList ? 'completed/' : 'active/')
         try {
             const response = await fetch(url);
             return response.ok ? response.json() : null;
@@ -99,12 +115,28 @@ export default function SortableList({ newTaskCreated, completedTasksList}) {
         });
     };
 
+    useEffect(() => {
+        switch(onSort) {
+            default:
+                break;
+            case 'longest':
+                var sorted = [...tasks];
+                sorted.sort((a, b) => (a.remaining < b.remaining) ? 1 : ((b.remaining < a.remaining) ? -1 : 0));
+                setTasks(sorted);
+                break;
+            case 'shortest':
+                var sorted = [...tasks];
+                sorted.sort((a, b) => (a.remaining > b.remaining) ? 1 : ((b.remaining > a.remaining) ? -1 : 0));
+                setTasks(sorted);
+                break;
+        }
+    }, [onSort])
+
     //Update list when new task is created
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
         } else {
-            console.log('new task created')
             fetchTasks().then(data => {
                 data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
                 var index = data.findIndex(i => i.title === newTaskCreated.title);
@@ -125,13 +157,10 @@ export default function SortableList({ newTaskCreated, completedTasksList}) {
         .then(data => {
             data.sort((a, b) => (a.order > b.order) ? 1 : ((b.order > a.order) ? -1 : 0));
             setTasks(data);
-            setLoading(false)
+            setLoading(false);
             }
-        )
-        // return () => {
-        //     cleanup
-        // };
-    }, []);
+        );
+    }, [onUpdateTasks]);
 
     const onSortEnd =  ({oldIndex, newIndex}) => {
         var newOrder = [...tasks];
@@ -147,7 +176,7 @@ export default function SortableList({ newTaskCreated, completedTasksList}) {
         setTasks(newTasks);
 
         var csrf_token = getCookie('csrftoken');
-        var url = 'http://127.0.0.1:8000/api/task-delete/' + e.id + '/';
+        var url = BASE_URL + 'api/task-delete/' + e.id + '/';
 
         fetch(url, {
             method: 'DELETE',
@@ -155,7 +184,7 @@ export default function SortableList({ newTaskCreated, completedTasksList}) {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrf_token,
             }
-        })
+        });
     }
 
     function getCurrentDate() {
@@ -188,12 +217,12 @@ export default function SortableList({ newTaskCreated, completedTasksList}) {
         <>
         
         {isLoading === true && 
-        <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+        <div className="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
         }
 
         {isLoading === false && 
         <ActiveTask.Provider value={active_task}>
-            <SortableComponent items={tasks} onSortEnd={onSortEnd} onFocusTask={focusTask} onDeleteTask={deleteTask} onFinishedTask={markTaskAsComplete}/>
+            <SortableComponent items={tasks} onSortEnd={onSortEnd} onFocusTask={focusTask} onDeleteTask={deleteTask} onFinishedTask={markTaskAsComplete} onEditTask={onEditTask}/>
         </ActiveTask.Provider>
         }
         </>
