@@ -27,7 +27,7 @@ SECRET_KEY = 'l9cd89z20+1l4ct!!tc!dqc*&cueo-^(wfy(ckep)@+!66udr#'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'https://productivity-app-react.herokuapp.com/']
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'productivity-app-react.herokuapp.com']
 
 
 # Application definition
